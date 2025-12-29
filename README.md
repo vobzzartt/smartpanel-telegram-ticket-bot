@@ -1,8 +1,8 @@
-# SmartPanel Telegram Ticket Bot
+# SmartPanel SMM Telegram Ticket Bot
 
-A production-ready Telegram bot that allows SmartPanel administrators to receive ticket updates and reply directly from Telegram, without logging into the SmartPanel admin dashboard.
+A production-ready Telegram bot that allows SmartPanel administrators to receive ticket updates and reply directly from Telegram, without logging into the SmartPanel admin dashboard everytime.
 
-This project was built to solve the real-world problem of delayed support responses caused by repeatedly logging into admin panels just to read or reply to tickets.
+This project was built to solve the problem of delayed support responses caused by repeatedly logging into admin panels just to read or reply to tickets.
 
 ---
 
@@ -15,16 +15,16 @@ In SmartPanel (and similar SMM panels), admins usually have to:
 - Reply manually
 - Repeat this process multiple times daily
 
-This becomes slow, stressful, and inefficient — especially on mobile.
+This becomes slow, stressful, and inefficient
 
 This bot removes that friction completely.
 
 With this system:
 - New user ticket messages are pushed instantly to Telegram
+- Receive new Ticket alert instantly
 - Admin can read the *latest user message*
 - Admin can reply directly from Telegram
 - Ticket status updates correctly in SmartPanel
-- The admin notification badge clears properly
 
 No extra logins. No delays. No missed tickets.
 
@@ -37,9 +37,6 @@ No extra logins. No delays. No missed tickets.
 - Supports replying directly from Telegram
 - Saves admin replies into SmartPanel correctly
 - Updates ticket status to answered
-- Clears SmartPanel admin notification badge
-- Prevents duplicate Telegram alerts
-- Uses prepared SQL statements to prevent SQL injection
 - Works via:
   - Direct URL execution
   - Cron jobs
@@ -52,7 +49,7 @@ No extra logins. No delays. No missed tickets.
 1. User sends or continues a ticket on SmartPanel
 2. SmartPanel stores the message in the database
 3. This script:
-   - Detects the latest user message
+   - Detects the user message
    - Sends it to Telegram
 4. Admin replies on Telegram (swipe → reply)
 5. The bot:
@@ -69,7 +66,7 @@ Everything stays perfectly in sync.
 
 - PHP 7.4 or higher
 - MySQL / MariaDB
-- SmartPanel installed
+- SmartPanel SMM script installed
 - Telegram Bot
 - cPanel / VPS / Hosting with cron support
 
@@ -82,7 +79,7 @@ smartpanel-telegram-ticket-bot/
 ├── ticketbot.php
 ├── README.md
 ├── telegram_ticket_map.json   (auto-created at runtime)
-└── .env (optional, recommended)
+
 
 ---
 
@@ -152,19 +149,18 @@ This check for new pending ticket per each time you set it to run.
 ////////////
 
 Security Notes
- • Uses prepared SQL statements
+ • This Script Uses prepared SQL statements
  • No raw user input in queries
  • Resistant to SQL injection
  • Telegram message mapping prevents replay attacks
- • Sensitive credentials should be moved to .env or config file
 
 ⸻
 
 Who This Is For
- • SmartPanel owners
+ • SmartPanel SMM owners
  • SMM panel admins
  • Support teams handling many tickets
- • Anyone who wants faster support responses
+ • Anyone who wants one time faster support responses
 
 ⸻
 
@@ -175,9 +171,12 @@ You are free to use, modify, and improve it.
 
 ⸻
 
+This project was created after real production debugging,
+real database analysis, and real SmartPanel behavior testing.
+
 Author
 
 Built by Victor Bodude
+https://victorbodude.name.ng
+Happy Automating! 🎉
 
-This project was created after real production debugging,
-real database analysis, and real SmartPanel behavior testing.
