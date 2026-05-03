@@ -1,45 +1,48 @@
 <?php
-/* =========================================================
-   Telegram Ticket Bot for SmartPanel (PHP)
-   ---------------------------------------------------------
-   This script sends SmartPanel support tickets to Telegram
-   and allows admins to reply directly from Telegram.
-   Replies are saved back into the SmartPanel ticket system.
-   ========================================================= */
 
-/* ================== CONFIGURATION ================== */
+// Run from CLI only (block browser access)
+if (php_sapi_name() !== 'cli') {
+    http_response_code(403);
+    exit('Forbidden');
+}
 
-// Telegram bot token 
+
+// Load config file (update path to your config.php)
+$config_path = __DIR__ . '/config.php'; // replace if needed
+if (!file_exists($config_path)) {
+    die("config.php not found\n");
+}
+require_once $config_path;
+
+
+// Ensure required DB constants exist
+foreach (['DB_HOST', 'DB_USER', 'DB_PASS', 'DB_NAME'] as $const) {
+    if (!defined($const)) {
+        die("Missing {$const} in config.php\n");
+    }
+}
+
+
+// Telegram bot token (replace with your own)
 $BOT_TOKEN = 'YOUR_TELEGRAM_BOT_TOKEN';
 
-// Telegram user ID of the admin to receive tickets
+// Telegram admin chat ID (replace with your own)
 $ADMIN_ID  = YOUR_TELEGRAM_CHAT_ID;
 
-// Database connection (SmartPanel database)
-$dbHost = 'localhost';
-$dbName = 'YOUR_DATABASE_NAME';
-$dbUser = 'YOUR_DATABASE_USERNAME';
-$dbPass = 'YOUR_DATABASE_PASSWORD';
 
-// File used to prevent duplicate Telegram alerts
+// File used to track sent messages (prevents duplicates)
 $mapFile = __DIR__ . '/telegram_ticket_map.json';
 
-/* ================== BASIC SETUP ================== */
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-header('Content-Type: text/plain; charset=utf-8');
-
-/* ================== DATABASE ================== */
-
-$conn = new mysqli($dbHost, $dbUser, $dbPass, $dbName);
+// Connect to database using config values
+$conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($conn->connect_error) {
     die("Database connection failed\n");
 }
 $conn->set_charset('utf8mb4');
 
-/* ================== LOAD MESSAGE MAP ================== */
 
+// Load existing message map
 $map = file_exists($mapFile)
     ? json_decode(file_get_contents($mapFile), true)
     : [];
@@ -48,13 +51,8 @@ if (!is_array($map)) {
     $map = [];
 }
 
-/* =========================================================
-   1) TELEGRAM WEBHOOK MODE (ADMIN REPLY)
-   ---------------------------------------------------------
-   Runs when admin replies to a Telegram message.
-   Saves reply into SmartPanel ticket_messages table.
-   ========================================================= */
 
+// Handle Telegram reply 
 $update = json_decode(file_get_contents('php://input'), true);
 
 if (isset($update['message'])) {
@@ -92,7 +90,7 @@ if (isset($update['message'])) {
     $stmt->execute();
     $stmt->close();
 
-    // Mark all user messages as read
+    // Mark user messages as read
     $stmt = $conn->prepare("
         UPDATE ticket_messages
         SET is_read = 1
@@ -102,7 +100,7 @@ if (isset($update['message'])) {
     $stmt->execute();
     $stmt->close();
 
-    // Confirmation back to Telegram
+    // Send confirmation back to Telegram
     file_get_contents(
         "https://api.telegram.org/bot{$BOT_TOKEN}/sendMessage?" .
         http_build_query([
@@ -114,15 +112,11 @@ if (isset($update['message'])) {
     exit('OK');
 }
 
-/* =========================================================
-   2) CRON / MANUAL MODE (SEND USER MESSAGES TO TELEGRAM)
-   ---------------------------------------------------------
-   Finds tickets that need admin attention and sends the
-   latest user message to Telegram.
-   ========================================================= */
 
+// Scan tickets and send to Telegram 
 echo "=== Ticket Scan ===\n";
 echo "Run at: " . date('Y-m-d H:i:s') . "\n\n";
+
 
 $sql = "
 SELECT
@@ -175,13 +169,13 @@ while ($row = $res->fetch_assoc()) {
     }
 
     $messageText =
-        "ðŸ“¨ *New Support Ticket*\n\n" .
+        "📨 *New Support Ticket*\n\n" .
         "*Ticket ID:* `{$ticketId}`\n" .
         "*User:* {$row['fullname']}\n" .
         "*Email:* {$row['email']}\n" .
         "*Subject:* {$row['subject']}\n\n" .
         "*Latest Message:*\n{$latestMsg}\n\n" .
-        "ðŸ‘‰ Swipe to reply";
+        "👉 Swipe to reply";
 
     $payload = [
         'chat_id' => $ADMIN_ID,
@@ -213,6 +207,8 @@ while ($row = $res->fetch_assoc()) {
     }
 }
 
+
+// Save updated map
 file_put_contents($mapFile, json_encode($newMap, JSON_PRETTY_PRINT));
 
 echo "\nAlerts sent: {$sent}\n";
